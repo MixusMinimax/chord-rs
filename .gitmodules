@@ -1,0 +1,3 @@
+[submodule "chord-api"]
+	path = chord-api
+	url = git@github.com:MixusMinimax/chord-api.git
