@@ -1,0 +1,11 @@
+[package]
+name = "chord-types"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "chord_types"
+path = "src/lib.rs"
+
+[dependencies]
+uuid = "1.8.0"
