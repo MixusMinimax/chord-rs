@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectTasksOptions">
+    <TaskOptions isEnabled="true">
+      <option name="arguments" value="-c &quot;cargo sort \&quot;$(wslpath -a '$FileDir$')\&quot;&quot;" />
+      <option name="checkSyntaxErrors" value="true" />
+      <option name="description" />
+      <option name="exitCodeBehavior" value="ERROR" />
+      <option name="fileExtension" value="toml" />
+      <option name="immediateSync" value="false" />
+      <option name="name" value="Cargo Sort" />
+      <option name="output" value="" />
+      <option name="outputFilters">
+        <array />
+      </option>
+      <option name="outputFromStdout" value="false" />
+      <option name="program" value="bash" />
+      <option name="runOnExternalChanges" value="false" />
+      <option name="scopeName" value="Cargo.toml" />
+      <option name="trackOnlyRoot" value="false" />
+      <option name="workingDir" value="" />
+      <envs />
+    </TaskOptions>
+  </component>
+</project>
