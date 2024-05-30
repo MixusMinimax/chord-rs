@@ -1,7 +1,21 @@
 [package]
 name = "chord"
 version = "0.1.0"
+edition = "2021"
+build = "build.rs"
 
 [[bin]]
 name = "chord"
 path = "src/main.rs"
+
+[dependencies]
+chord-types = { path = "../chord-types" }
+clap = { version = "4.5.4", features = ["derive"] }
+prost = "0.12.4"
+serde = { version = "1.0.203", features = ["derive"] }
+
+[build-dependencies]
+cargo-emit = "0.2.1"
+prost-build = "0.12.4"
+tonic-build = "0.11.0"
+walkdir = "2.5.0"
