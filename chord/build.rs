@@ -28,6 +28,7 @@ mod proto {
     pub fn compile_proto(out_dir: &Path) {
         let (proto_root, proto_files) = proto_files();
         if !should_compile(out_dir, &proto_files) {
+            eprintln!("Proto files have not changed, skipping compilation");
             return;
         }
         rerun_if_changed!(proto_root.as_os_str().to_str().unwrap());
