@@ -6,18 +6,8 @@
  * https://opensource.org/licenses/MIT.
  */
 
-use uuid::Uuid;
-
-pub trait Node {}
-
-pub struct NodeImpl {
-    pub id: Uuid,
+pub fn init_logging() {
+    let config_str = include_str!("log.toml");
+    let config = toml::from_str(config_str).expect("Failed to parse log config");
+    log4rs::init_raw_config(config).unwrap();
 }
-
-impl NodeImpl {
-    pub fn new(id: Uuid) -> Self {
-        Self { id }
-    }
-}
-
-impl Node for NodeImpl {}

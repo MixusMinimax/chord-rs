@@ -11,12 +11,15 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
+use crate::api::com::barmetler::chord::node_service_server::NodeService;
 use crate::node::Node;
 
 pub struct NodeGrpcService {}
 
 impl NodeGrpcService {
-    pub fn new(nodes: Arc<HashMap<Uuid, Node>>) -> Self {
+    pub fn new(nodes: Arc<HashMap<Uuid, Box<dyn Node>>>) -> Self {
         Self {}
     }
 }
+
+impl NodeService for NodeGrpcService {}

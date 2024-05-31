@@ -11,7 +11,7 @@
  * generating completions.
  */
 
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::SocketAddr;
 
 use clap::Parser;
 
@@ -19,18 +19,17 @@ use clap::Parser;
 #[command(version, about, long_about = None)]
 pub struct Args {
     /// The number of virtual nodes to use.
-    #[arg(long, default_value = "1")]
+    #[arg(short = 'n', long, default_value = "1")]
     pub virtual_nodes: u32,
 
-    #[arg(long)]
-    pub ipv4addr: Option<Ipv4Addr>,
-
-    #[arg(long)]
-    pub ipv4port: Option<u16>,
-
-    #[arg(long)]
-    pub ipv6addr: Option<Ipv6Addr>,
-
-    #[arg(long)]
-    pub ipv6port: Option<u16>,
+    /// The addresses to bind the grpc interfaces to.
+    ///
+    /// Supports both IPv4 and IPv6 addresses.
+    #[arg(
+        short = 'a',
+        long = "address",
+        value_name = "ADDRESS",
+        value_delimiter = ','
+    )]
+    pub socket_addresses: Vec<SocketAddr>,
 }

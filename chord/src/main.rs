@@ -11,26 +11,77 @@ use std::iter::repeat_with;
 use std::sync::Arc;
 
 use clap::Parser;
+use log::{info, warn};
+use tokio::select;
+use tokio::signal::ctrl_c;
+use tokio::signal::unix::{signal, SignalKind};
+use tonic::transport::Server;
 use uuid::Uuid;
 
 use args::Args;
 
-use crate::node::Node;
+use crate::api::com::barmetler::chord::node_service_server::NodeServiceServer;
+use crate::logging::init_logging;
+use crate::node::{Node, NodeImpl};
 use crate::node_grpc_service::NodeGrpcService;
 
 mod api;
 mod args;
+mod logging;
 mod node;
 mod node_grpc_service;
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    init_logging();
+
     let args = Args::parse();
 
-    let nodes: HashMap<_, _> = repeat_with(|| Node::new(Uuid::new_v4()))
-        .map(|node| (node.id, node))
+    let nodes: HashMap<_, _> = repeat_with(|| NodeImpl::new(Uuid::new_v4()))
+        .map(|node| (node.id, Box::new(node) as Box<dyn Node>))
         .take(args.virtual_nodes as usize)
         .collect();
     let nodes = Arc::new(nodes);
 
-    let node_grpc_service = NodeGrpcService::new(nodes);
+    let node_grpc_service = Arc::new(NodeGrpcService::new(nodes.clone()));
+
+    let mut tasks = Vec::new();
+
+    // Start grpc interfaces
+    let socket_addresses = args.socket_addresses;
+    if socket_addresses.is_empty() {
+        warn!("No socket addresses provided, not starting grpc interfaces");
+    }
+    tasks.extend(socket_addresses.into_iter().map(|address| {
+        let node_grpc_service = node_grpc_service.clone();
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(NodeServiceServer::from_arc(node_grpc_service))
+                .serve_with_shutdown(address, async {
+                    info!("Server started on {}", address);
+                    #[cfg(unix)]
+                    {
+                        let sig_int = ctrl_c();
+                        let mut sig_term = signal(SignalKind::terminate()).unwrap();
+                        select! {
+                            e = sig_int => e.unwrap(),
+                            e = sig_term.recv() => e.unwrap(),
+                        }
+                    }
+                    #[cfg(windows)]
+                    ctrl_c().await.unwrap();
+                    info!("Shutting down server on {}...", address);
+                })
+                .await
+                .unwrap();
+        })
+    }));
+
+    // TODO: start interfaces to communicate with local clients (ethernet, pipes, stdin/stdout, etc.)
+
+    for task in tasks {
+        task.await.unwrap();
+    }
+
+    info!("All servers shut down.");
 }

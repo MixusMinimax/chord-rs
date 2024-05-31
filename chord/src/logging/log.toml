@@ -1,0 +1,11 @@
+[appenders.stdout]
+kind = "console"
+encoder.pattern = "{d(%+)(utc)} [{f}:{L}] {h({l})} {M}:{m}{n}"
+
+[[appenders.stdout.filters]]
+kind = "threshold"
+level = "debug"
+
+[root]
+level = "debug"
+appenders = ["stdout"]
