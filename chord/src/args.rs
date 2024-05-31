@@ -6,6 +6,11 @@
  * https://opensource.org/licenses/MIT.
  */
 
+/*
+ * Make sure not to use imports in this module, as it is included in the `build.rs` script for
+ * generating completions.
+ */
+
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use clap::Parser;

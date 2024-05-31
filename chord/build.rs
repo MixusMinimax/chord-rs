@@ -23,7 +23,7 @@ mod proto {
     use std::hash::{DefaultHasher, Hash, Hasher};
     use std::path::{Path, PathBuf};
 
-    use cargo_emit::{rerun_if_changed, warning};
+    use cargo_emit::warning;
     use prost_build::Config;
     use walkdir::WalkDir;
 
@@ -37,16 +37,19 @@ mod proto {
             eprintln!("Proto files have not changed, skipping compilation");
             return;
         }
-        rerun_if_changed!(proto_root.as_os_str().to_str().unwrap());
         let mut config = Config::new();
-        config
+        config.default_package_filename("_");
+        tonic_build::configure()
             .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
             .type_attribute(".", "#[serde(rename_all = \"camelCase\")]")
             .out_dir(out_dir)
-            .default_package_filename("_")
             .include_file("_.include.rs")
-            .compile_protos(&proto_files, &[proto_root])
-            .unwrap();
+            .emit_rerun_if_changed(true)
+            .build_client(true)
+            .build_server(true)
+            .generate_default_stubs(true)
+            .compile_with_config(config, &proto_files, &[proto_root])
+            .unwrap()
     }
 
     fn proto_files() -> (PathBuf, Vec<PathBuf>) {
