@@ -1,6 +1,9 @@
 [appenders.stdout]
 kind = "console"
-encoder.pattern = "{d(%+)(utc)} [{f}:{L}] {h({l})} {M}:{m}{n}"
+encoder.pattern = """\
+    \u001b[0;36m{d(%Y-%m-%d %H:%M:%S %Z)(utc)}\u001b[m \
+    {h(\u001b[1m{l})} [{f}:{L}] : \
+    {m}{n}"""
 
 [[appenders.stdout.filters]]
 kind = "threshold"
