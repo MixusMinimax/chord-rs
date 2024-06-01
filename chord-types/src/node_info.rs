@@ -8,11 +8,9 @@
 
 use std::net::IpAddr;
 
-use uuid::Uuid;
-
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct NodeInfo {
-    pub id: Uuid,
+    pub id: u64,
     pub address: IpAddr,
     pub port: u16,
 }

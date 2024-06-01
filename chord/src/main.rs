@@ -16,19 +16,22 @@ use tokio::select;
 use tokio::signal::ctrl_c;
 use tokio::signal::unix::{signal, SignalKind};
 use tonic::transport::Server;
-use uuid::Uuid;
 
 use args::Args;
 
 use crate::api::com::barmetler::chord::node_service_server::NodeServiceServer;
 use crate::logging::init_logging;
-use crate::node::{Node, NodeImpl};
+use crate::node::{BoxedNode, NodeImpl};
+use crate::node_factory::NodeFactory;
 use crate::node_grpc_service::NodeGrpcService;
 
 mod api;
 mod args;
+mod convert;
 mod logging;
+mod looping_range;
 mod node;
+mod node_factory;
 mod node_grpc_service;
 
 #[tokio::main]
@@ -37,8 +40,10 @@ async fn main() {
 
     let args = Args::parse();
 
-    let nodes: HashMap<_, _> = repeat_with(|| NodeImpl::new(Uuid::new_v4()))
-        .map(|node| (node.id, Box::new(node) as Box<dyn Node>))
+    let mut factory = node_factory::DefaultNodeFactory;
+
+    let nodes: HashMap<_, _> = repeat_with(|| factory.create_node())
+        .map(|node: NodeImpl| (node.id, Box::new(node) as BoxedNode))
         .take(args.virtual_nodes as usize)
         .collect();
     let nodes = Arc::new(nodes);
