@@ -31,7 +31,9 @@ mod convert;
 mod logging;
 mod looping_range;
 mod node;
+mod node_client_factory;
 mod node_factory;
+mod node_grpc_client;
 mod node_grpc_service;
 
 #[tokio::main]

@@ -10,8 +10,10 @@ path = "src/main.rs"
 
 [dependencies]
 async-trait = "0.1.80"
+cached = { version = "0.51.3", features = ["async"] }
 chord-types = { path = "../chord-types" }
 clap = { version = "4.5.4", features = ["derive"] }
+futures = "0.3.30"
 log = "0.4.21"
 log4rs = "1.3.0"
 prost = "0.12.4"

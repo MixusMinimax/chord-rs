@@ -8,7 +8,7 @@
 
 use std::net::IpAddr;
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct NodeInfo {
     pub id: u64,
     pub address: IpAddr,

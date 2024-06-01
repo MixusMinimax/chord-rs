@@ -33,7 +33,7 @@ impl NodeGrpcService {
     fn find_node(&self, id: u64) -> Result<&BoxedNode, NodeServiceError> {
         self.nodes
             .get(&id)
-            .ok_or_else(|| NodeServiceError::node_not_found(id))
+            .ok_or(NodeServiceError::node_not_found(id))
     }
 
     fn find_node_by_id_string(&self, id: impl AsRef<str>) -> Result<&BoxedNode, NodeServiceError> {
@@ -76,7 +76,7 @@ impl NodeService for NodeGrpcService {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Error)]
+#[derive(Clone, Debug, Error)]
 pub enum NodeServiceError {
     #[error("node not found: {0}")]
     NodeNotFound(u64),
