@@ -6,41 +6,48 @@
  * https://opensource.org/licenses/MIT.
  */
 
+use std::sync::Arc;
+
 use cached::{Cached, TimedSizedCache};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use thiserror::Error;
 use tokio::sync::{Mutex, RwLock};
 use tonic::{async_trait, Code, Status};
-use tonic::codegen::Body;
 
 use chord_types::finger_table::FingerTable;
 use chord_types::node_info::NodeInfo;
 
 use crate::convert::ConversionError;
+use crate::node_client_factory::NodeClientFactory;
 
-pub type BoxedNode = Box<dyn Node + Send + Sync>;
+pub type DynNode = dyn Node + Send + Sync;
+pub type BoxedNode = Box<DynNode>;
 
 #[async_trait]
 pub trait Node {
+    fn id(&self) -> u64;
+
     async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError>;
 
     async fn get_predecessor(&self) -> Result<NodeInfo, NodeError>;
-}
-
-pub trait NodeConstructor {
-    fn new_with_id(id: u64) -> Self;
 }
 
 pub struct NodeImpl {
     pub id: u64,
     finger_table: RwLock<FingerTable>,
     node_statuses: Mutex<TimedSizedCache<NodeInfo, BoxFuture<'static, NodeStatus>>>,
+    grpc_node_client_factory: Arc<dyn NodeClientFactory>,
 }
 
-impl NodeConstructor for NodeImpl {
-    fn new_with_id(id: u64) -> Self {
-        Self::new(id)
+impl NodeImpl {
+    pub fn new(id: u64, client_factory: Arc<dyn NodeClientFactory>) -> Self {
+        Self {
+            id,
+            finger_table: Default::default(),
+            node_statuses: Mutex::new(TimedSizedCache::with_size_and_lifespan(1024, 60)),
+            grpc_node_client_factory: client_factory,
+        }
     }
 }
 
@@ -50,14 +57,6 @@ enum NodeStatus {
 }
 
 impl NodeImpl {
-    pub fn new(id: u64) -> Self {
-        Self {
-            id,
-            finger_table: Default::default(),
-            node_statuses: Mutex::new(TimedSizedCache::with_size_and_lifespan(1024, 60)),
-        }
-    }
-
     async fn check_node(&self, node_info: NodeInfo) -> NodeStatus {
         self.node_statuses
             .lock()
@@ -75,6 +74,10 @@ impl NodeImpl {
 
 #[async_trait]
 impl Node for NodeImpl {
+    fn id(&self) -> u64 {
+        self.id
+    }
+
     async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError> {
         let finger_table = self.finger_table.read().await;
         todo!();

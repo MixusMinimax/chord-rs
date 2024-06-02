@@ -6,21 +6,29 @@
  * https://opensource.org/licenses/MIT.
  */
 
-use rand::random;
+use std::sync::Arc;
 
-use crate::node::{Node, NodeConstructor};
+use shaku::{Component, Interface};
 
-pub trait NodeFactory<T: Node> {
-    fn create_node(&mut self) -> T;
+use crate::node::{BoxedNode, NodeImpl};
+use crate::node_client_factory::NodeClientFactory;
+
+pub trait NodeFactory: Interface {
+    fn create_node(&self, id: u64) -> BoxedNode;
 }
 
-pub struct DefaultNodeFactory;
+#[derive(Component)]
+#[shaku(interface = NodeFactory)]
+pub struct DefaultNodeFactory {
+    #[shaku(inject)]
+    client_factory: Arc<dyn NodeClientFactory>,
+}
 
-impl<T: Node + NodeConstructor> NodeFactory<T> for DefaultNodeFactory {
+impl NodeFactory for DefaultNodeFactory {
     /// Create a new node with a random id.
     ///
     /// Uses [rand::thread_rng] to generate a random id.
-    fn create_node(&mut self) -> T {
-        T::new_with_id(random())
+    fn create_node(&self, id: u64) -> BoxedNode {
+        Box::new(NodeImpl::new(id, self.client_factory.clone()))
     }
 }

@@ -23,13 +23,6 @@ pub struct NodeGrpcClient {
 }
 
 impl NodeGrpcClient {
-    pub fn new(node_info: impl Into<NodeInfo>, channel: Channel) -> Self {
-        Self {
-            node_info: node_info.into(),
-            channel,
-        }
-    }
-
     fn client(&self) -> NodeServiceClient<Channel> {
         NodeServiceClient::new(self.channel.clone())
     }
@@ -37,6 +30,10 @@ impl NodeGrpcClient {
 
 #[async_trait]
 impl Node for NodeGrpcClient {
+    fn id(&self) -> u64 {
+        self.node_info.id
+    }
+
     async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError> {
         Ok(self
             .client()

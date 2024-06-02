@@ -6,11 +6,11 @@
  * https://opensource.org/licenses/MIT.
  */
 
-use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use shaku::{Component, Interface};
 use thiserror::Error;
 use tonic::{Code, Request, Response, Status};
 
@@ -19,24 +19,31 @@ use crate::api::com::barmetler::chord::{
 };
 use crate::api::com::barmetler::chord::node_service_server::NodeService;
 use crate::convert::ToProto;
-use crate::node::{BoxedNode, NodeError};
+use crate::node::{DynNode, NodeError};
+use crate::node_manager::NodeManager;
 
+pub trait NodeGrpcServiceComponent: NodeService + Interface {}
+
+#[derive(Component)]
+#[shaku(interface = NodeGrpcServiceComponent)]
 pub struct NodeGrpcService {
-    nodes: Arc<HashMap<u64, BoxedNode>>,
+    #[shaku(inject)]
+    node_manager: Arc<dyn NodeManager>,
 }
 
-impl NodeGrpcService {
-    pub fn new(nodes: Arc<HashMap<u64, BoxedNode>>) -> Self {
-        Self { nodes }
-    }
+impl NodeGrpcServiceComponent for NodeGrpcService {}
 
-    fn find_node(&self, id: u64) -> Result<&BoxedNode, NodeServiceError> {
-        self.nodes
-            .get(&id)
+impl NodeGrpcService {
+    fn find_node(&self, id: u64) -> Result<Arc<DynNode>, NodeServiceError> {
+        self.node_manager
+            .get_node(id)
             .ok_or(NodeServiceError::node_not_found(id))
     }
 
-    fn find_node_by_id_string(&self, id: impl AsRef<str>) -> Result<&BoxedNode, NodeServiceError> {
+    fn find_node_by_id_string(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Arc<DynNode>, NodeServiceError> {
         let id = id_from_string(id)?;
         self.find_node(id)
     }
