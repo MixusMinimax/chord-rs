@@ -8,9 +8,21 @@
 
 use std::net::IpAddr;
 
+use http::Uri;
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct NodeInfo {
     pub id: u64,
     pub address: IpAddr,
     pub port: u16,
+}
+
+impl NodeInfo {
+    pub fn uri(&self) -> Uri {
+        Uri::builder()
+            .scheme("http")
+            .authority(format!("{}:{}", self.address, self.port))
+            .build()
+            .unwrap()
+    }
 }

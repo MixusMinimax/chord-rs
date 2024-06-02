@@ -7,6 +7,7 @@
  */
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use shaku::{Component, Interface};
 
@@ -26,11 +27,22 @@ impl ConfigProvider for DefaultConfigProvider {
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct Config {
     pub virtual_nodes: u32,
     pub socket_addresses: Vec<String>,
+
+    pub client_config: ClientConfig,
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
+pub struct ClientConfig {
+    pub connect_timeout: Duration,
+    pub request_timeout: Duration,
+    pub keep_alive_timeout: Duration,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum PeerInterface {
     IpV4,
 }

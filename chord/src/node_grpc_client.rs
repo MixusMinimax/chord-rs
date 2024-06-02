@@ -23,6 +23,15 @@ pub struct NodeGrpcClient {
 }
 
 impl NodeGrpcClient {
+    pub fn new(node_info: NodeInfo, channel: Channel) -> Self {
+        Self {
+            node_info: node_info.to_owned(),
+            channel,
+        }
+    }
+}
+
+impl NodeGrpcClient {
     fn client(&self) -> NodeServiceClient<Channel> {
         NodeServiceClient::new(self.channel.clone())
     }

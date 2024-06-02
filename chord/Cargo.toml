@@ -14,6 +14,7 @@ cached = { version = "0.51.3", features = ["async"] }
 chord-types = { path = "../chord-types" }
 clap = { version = "4.5.4", features = ["derive"] }
 futures = "0.3.30"
+http = "0.2.12"
 log = "0.4.21"
 log4rs = "1.3.0"
 prost = "0.12.4"

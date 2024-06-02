@@ -6,6 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
+use std::ops::Bound;
 use std::sync::Arc;
 
 use cached::{Cached, TimedSizedCache};
@@ -20,6 +21,7 @@ use chord_types::node_info::NodeInfo;
 
 use crate::convert::ConversionError;
 use crate::node_client_factory::NodeClientFactory;
+use crate::util::looping_range::LoopingRange;
 
 pub type DynNode = dyn Node + Send + Sync;
 pub type BoxedNode = Box<DynNode>;
@@ -57,13 +59,21 @@ enum NodeStatus {
 }
 
 impl NodeImpl {
+    fn get_node(&self, node_info: &NodeInfo) -> BoxedNode {
+        self.grpc_node_client_factory.create_node_client(node_info)
+    }
+
     async fn check_node(&self, node_info: NodeInfo) -> NodeStatus {
         self.node_statuses
             .lock()
             .await
             .cache_get_or_set_with(node_info, || {
+                let node = self.get_node(&node_info);
                 async move {
-                    // TODO: communicate with node
+                    match node.get_predecessor().await {
+                        Ok(_) => NodeStatus::Alive,
+                        Err(_) => NodeStatus::Dead,
+                    };
                     NodeStatus::Alive
                 }
                 .boxed()
@@ -80,6 +90,21 @@ impl Node for NodeImpl {
 
     async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError> {
         let finger_table = self.finger_table.read().await;
+        for successor in finger_table.get_successors() {
+            if (
+                Bound::Excluded(self.id),
+                Bound::Included(successor.node_info.id),
+            )
+                .contains_looping(&id)
+            {
+                match self.check_node(successor.node_info).await {
+                    NodeStatus::Alive => return Ok(successor.node_info),
+                    NodeStatus::Dead => {
+                        log::debug!("successor {} is dead", successor.node_info.id);
+                    }
+                }
+            }
+        }
         todo!();
     }
 
@@ -89,7 +114,7 @@ impl Node for NodeImpl {
             match self.check_node(predecessor.node_info).await {
                 NodeStatus::Alive => return Ok(predecessor.node_info),
                 NodeStatus::Dead => {
-                    log::debug!("predecessor {} is dead", predecessor.node_info.id)
+                    log::debug!("predecessor {} is dead", predecessor.node_info.id);
                 }
             };
         }
