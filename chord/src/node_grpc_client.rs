@@ -12,10 +12,12 @@ use tonic::transport::Channel;
 
 use chord_types::node_info::NodeInfo;
 
-use crate::api::com::barmetler::chord::{FindSuccessorRequest, GetPredecessorRequest};
+use crate::api::com::barmetler::chord::{
+    find_successor_response, FindSuccessorRequest, GetPredecessorRequest,
+};
 use crate::api::com::barmetler::chord::node_service_client::NodeServiceClient;
 use crate::convert::TryToDomain;
-use crate::node::{Node, NodeError};
+use crate::node::{FindSuccessorParameters, FindSuccessorResult, Node, NodeError};
 
 pub struct NodeGrpcClient {
     node_info: NodeInfo,
@@ -43,18 +45,30 @@ impl Node for NodeGrpcClient {
         self.node_info.id
     }
 
-    async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError> {
-        Ok(self
-            .client()
-            .find_successor(Request::new(FindSuccessorRequest {
-                node_id: self.node_info.id.to_string(),
-                id: id.to_string(),
-            }))
-            .await?
-            .into_inner()
-            .node
-            .ok_or(NodeError::invalid_response(self.node_info.id))?
-            .try_to_domain()?)
+    async fn find_successor(
+        &self,
+        FindSuccessorParameters { id, .. }: FindSuccessorParameters,
+    ) -> Result<FindSuccessorResult, NodeError> {
+        Ok(
+            match self
+                .client()
+                .find_successor(Request::new(FindSuccessorRequest {
+                    node_id: self.node_info.id.to_string(),
+                    id: id.to_string(),
+                }))
+                .await?
+                .into_inner()
+                .node
+                .ok_or(NodeError::invalid_response(self.node_info.id))?
+            {
+                find_successor_response::Node::Successor(node) => {
+                    FindSuccessorResult::Successor(node.try_to_domain()?)
+                }
+                find_successor_response::Node::ClosestPrecedingNode(node) => {
+                    FindSuccessorResult::ClosestPrecedingNode(node.try_to_domain()?)
+                }
+            },
+        )
     }
 
     async fn get_predecessor(&self) -> Result<NodeInfo, NodeError> {

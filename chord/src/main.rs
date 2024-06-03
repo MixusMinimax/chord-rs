@@ -55,7 +55,7 @@ async fn main() {
         .with_component_parameters::<DefaultConfigProvider>(DefaultConfigProviderParameters {
             config: Arc::new(Config {
                 virtual_nodes: args.virtual_nodes,
-                socket_addresses: Vec::new(),
+                ..Default::default()
             }),
         })
         .build();

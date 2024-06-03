@@ -26,11 +26,26 @@ use crate::util::looping_range::LoopingRange;
 pub type DynNode = dyn Node + Send + Sync;
 pub type BoxedNode = Box<DynNode>;
 
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
+pub struct FindSuccessorParameters {
+    pub id: u64,
+    pub iterate: bool,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum FindSuccessorResult {
+    Successor(NodeInfo),
+    ClosestPrecedingNode(NodeInfo),
+}
+
 #[async_trait]
 pub trait Node {
     fn id(&self) -> u64;
 
-    async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError>;
+    async fn find_successor(
+        &self,
+        parameters: FindSuccessorParameters,
+    ) -> Result<FindSuccessorResult, NodeError>;
 
     async fn get_predecessor(&self) -> Result<NodeInfo, NodeError>;
 }
@@ -88,8 +103,12 @@ impl Node for NodeImpl {
         self.id
     }
 
-    async fn find_successor(&self, id: u64) -> Result<NodeInfo, NodeError> {
+    async fn find_successor(
+        &self,
+        FindSuccessorParameters { id, .. }: FindSuccessorParameters,
+    ) -> Result<FindSuccessorResult, NodeError> {
         let finger_table = self.finger_table.read().await;
+        // find direct successor
         for successor in finger_table.get_successors() {
             if (
                 Bound::Excluded(self.id),
@@ -98,13 +117,16 @@ impl Node for NodeImpl {
                 .contains_looping(&id)
             {
                 match self.check_node(successor.node_info).await {
-                    NodeStatus::Alive => return Ok(successor.node_info),
+                    NodeStatus::Alive => {
+                        return Ok(FindSuccessorResult::Successor(successor.node_info))
+                    }
                     NodeStatus::Dead => {
                         log::debug!("successor {} is dead", successor.node_info.id);
                     }
                 }
             }
         }
+        // find the closest preceding node
         todo!();
     }
 

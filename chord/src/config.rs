@@ -6,9 +6,11 @@
  * https://opensource.org/licenses/MIT.
  */
 
+use std::net::{SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use shaku::{Component, Interface};
 
 pub trait ConfigProvider: Interface {
@@ -27,22 +29,22 @@ impl ConfigProvider for DefaultConfigProvider {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct Config {
     pub virtual_nodes: u32,
-    pub socket_addresses: Vec<String>,
-
+    pub peer_interfaces: Vec<PeerInterface>,
     pub client_config: ClientConfig,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct ClientConfig {
     pub connect_timeout: Duration,
     pub request_timeout: Duration,
     pub keep_alive_timeout: Duration,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum PeerInterface {
-    IpV4,
+    GrpcIpV4(SocketAddrV4),
+    GrpcIpV6(SocketAddrV6),
 }

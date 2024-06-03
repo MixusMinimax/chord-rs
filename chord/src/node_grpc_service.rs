@@ -15,11 +15,12 @@ use thiserror::Error;
 use tonic::{Code, Request, Response, Status};
 
 use crate::api::com::barmetler::chord::{
-    FindSuccessorRequest, FindSuccessorResponse, GetPredecessorRequest, GetPredecessorResponse,
+    find_successor_response, FindSuccessorRequest, FindSuccessorResponse, GetPredecessorRequest,
+    GetPredecessorResponse,
 };
 use crate::api::com::barmetler::chord::node_service_server::NodeService;
 use crate::convert::ToProto;
-use crate::node::{DynNode, NodeError};
+use crate::node::{DynNode, FindSuccessorParameters, FindSuccessorResult, NodeError};
 use crate::node_manager::NodeManager;
 
 pub trait NodeGrpcServiceComponent: NodeService + Interface {}
@@ -58,12 +59,22 @@ impl NodeService for NodeGrpcService {
         let request = request.into_inner();
         let node = self.find_node_by_id_string(request.node_id)?;
         let id = id_from_string(request.id)?;
-        let node_info = node
-            .find_successor(id)
+        let result = node
+            .find_successor(FindSuccessorParameters {
+                id,
+                ..Default::default()
+            })
             .await
             .map_err(NodeServiceError::from)?;
         Ok(Response::new(FindSuccessorResponse {
-            node: Some(node_info.to_proto()),
+            node: Some(match result {
+                FindSuccessorResult::Successor(node) => {
+                    find_successor_response::Node::Successor(node.to_proto())
+                }
+                FindSuccessorResult::ClosestPrecedingNode(node) => {
+                    find_successor_response::Node::ClosestPrecedingNode(node.to_proto())
+                }
+            }),
         }))
     }
 
